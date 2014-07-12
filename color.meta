@@ -1,0 +1,6 @@
+;; -*- scheme -*-
+
+((license "BSD")
+ (category misc)
+ (author "John J. Foerch")
+ (synopsis "color and colorspace manipulation"))

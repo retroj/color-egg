@@ -1,0 +1,5 @@
+;; -*- scheme -*-
+
+(repo git "git://github.com/retroj/color-egg.git")
+(uri targz "https://github.com/retroj/color-egg/tarball/{egg-release}")
+;(release "0.1")

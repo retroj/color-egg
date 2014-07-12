@@ -1,0 +1,9 @@
+;; -*- scheme -*-
+
+(compile -s -O3 -d0 color.scm -J)
+(compile -s -O3 -d0 color.import.scm)
+
+(install-extension
+    'color
+  '("color.so" "color.import.so")
+  '((version 0.1)))
