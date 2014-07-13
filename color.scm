@@ -62,6 +62,11 @@
       (map (lambda (x) (slot-value c x)) (slot-value cs 'channels))))
    (else (list))))
 
+(define-method (colorspace-convert (c <color>) (cs <colorspace>))
+  (if (eq? cs (slot-value c 'colorspace))
+      c
+      (error "Don't know how to convert colorspace")))
+
 
 ;; colorspace-rgb
 ;;
