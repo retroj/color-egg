@@ -93,10 +93,6 @@
 (define colorspace-rgb
   (make-colorspace 'rgb '(r g b)))
 
-
-;; rgb-color
-;;
-
 (define (make-rgb-color r g b)
   (make-color colorspace-rgb r g b))
 
@@ -106,10 +102,6 @@
 
 (define colorspace-hsv
   (make-colorspace 'hsv '(h s v)))
-
-
-;; hsv-color
-;;
 
 (define (make-hsv-color h s v)
   (make-color colorspace-hsv h s v))
