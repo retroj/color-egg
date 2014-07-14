@@ -25,8 +25,9 @@
 ;; ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (module color
-    (<colorspace> <color>
-     color-values color-value
+    (make-colorspace colorspace? colorspace-name colorspace-channels
+     make-color color? color-colorspace color-values
+     color-value
      colorspace-convert
      colorspace-rgb make-rgb-color
      colorspace-hsv make-hsv-color)
@@ -34,48 +35,46 @@
 (import chicken scheme)
 
 (use (srfi 1)
-     coops
      extras
      list-utils)
 
 ;; colorspace
 ;;
 
-(define-class <colorspace> ()
-  ((name)
-   (channels initform: (list))))
+(define-record colorspace
+  name channels)
 
 
 ;; color
 ;;
 
-(define-class <color> ()
-  ((colorspace)
-   (values initform: (make-vector 0))))
+(define-record color
+  colorspace values)
+
+(define %make-color make-color)
+(define %color-values color-values)
 
 (define (make-color colorspace . values)
-  (make <color>
-    'colorspace colorspace
-    'values (list->vector values)))
+  (%make-color colorspace (list->vector values)))
 
 (define (color-values c)
-  (vector->list (slot-value c 'values)))
+  (vector->list (%color-values c)))
 
 (define (color-value c channel)
-  (let* ((cs (slot-value c 'colorspace))
-         (channels (slot-value cs 'channels)))
-    (vector-ref (slot-value c 'values)
+  (let* ((cs (color-colorspace c))
+         (channels (colorspace-channels cs)))
+    (vector-ref (%color-values c)
                 (list-index (lambda (x) (eq? x channel))
                             channels))))
 
 (define colorspace-conversion-functions (list))
 
 (define (colorspace-convert color dst-colorspace)
-  (let ((src-colorspace (slot-value color 'colorspace)))
+  (let ((src-colorspace (color-colorspace color)))
     (cond
-     ((eq? dst-colorspace (slot-value color 'colorspace))
+     ((eq? dst-colorspace (color-colorspace color))
       color)
-     #;((slot-value dst-colorspace 'profile)
+     #;((colorspace-profile dst-colorspace)
       =>
       (lambda (profile)
         ))
@@ -92,9 +91,7 @@
 ;;
 
 (define colorspace-rgb
-  (make <colorspace>
-    'name 'rgb
-    'channels '(r g b)))
+  (make-colorspace 'rgb '(r g b)))
 
 
 ;; rgb-color
@@ -108,9 +105,7 @@
 ;;
 
 (define colorspace-hsv
-  (make <colorspace>
-    'name 'hsv
-    'channels '(h s v)))
+  (make-colorspace 'hsv '(h s v)))
 
 
 ;; hsv-color
