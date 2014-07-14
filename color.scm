@@ -25,22 +25,21 @@
 ;; ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (module color
-    (color-values
-     <colorspace> <color>
+    (<colorspace> <color>
+     color-values color-value
      colorspace-convert
-     <colorspace-rgb> colorspace-rgb <rgb-color> make-rgb-color
-     <colorspace-hsv> colorspace-hsv <hsv-color> make-hsv-color)
+     colorspace-rgb make-rgb-color
+     colorspace-hsv make-hsv-color)
 
 (import chicken scheme)
 
 (use (srfi 1)
      coops
-     extras)
+     extras
+     list-utils)
 
 ;; colorspace
 ;;
-
-(define-generic (colorspace-convert color dest-colorspace))
 
 (define-class <colorspace> ()
   ((name)
@@ -50,83 +49,89 @@
 ;; color
 ;;
 
-(define-generic (color-values c))
-
 (define-class <color> ()
-  ((colorspace)))
+  ((colorspace)
+   (values initform: (make-vector 0))))
 
-(define-method (color-values (c <color>))
-  (cond
-   ((slot-initialized? c 'colorspace)
-    (let ((cs (slot-value c 'colorspace)))
-      (map (lambda (x) (slot-value c x)) (slot-value cs 'channels))))
-   (else (list))))
+(define (make-color colorspace . values)
+  (make <color>
+    'colorspace colorspace
+    'values (list->vector values)))
 
-(define-method (colorspace-convert (c <color>) (cs <colorspace>))
-  (if (eq? cs (slot-value c 'colorspace))
-      c
-      (error "Don't know how to convert colorspace")))
+(define (color-values c)
+  (vector->list (slot-value c 'values)))
+
+(define (color-value c channel)
+  (let* ((cs (slot-value c 'colorspace))
+         (channels (slot-value cs 'channels)))
+    (vector-ref (slot-value c 'values)
+                (list-index (lambda (x) (eq? x channel))
+                            channels))))
+
+(define colorspace-conversion-functions (list))
+
+(define (colorspace-convert color dst-colorspace)
+  (let ((src-colorspace (slot-value color 'colorspace)))
+    (cond
+     ((eq? dst-colorspace (slot-value color 'colorspace))
+      color)
+     #;((slot-value dst-colorspace 'profile)
+      =>
+      (lambda (profile)
+        ))
+     ((assoc-def (list src-colorspace dst-colorspace) colorspace-conversion-functions)
+      =>
+      (lambda (conversion)
+        (let ((fn (cdr conversion)))
+          (fn color))))
+     (else
+      (error "Don't know how to convert colorspace X to colorspace Y")))))
 
 
 ;; colorspace-rgb
 ;;
 
-(define-class <colorspace-rgb> (<colorspace>)
-  ((name initform: 'rgb)
-   (channels initform: '(r g b))))
-
-(define colorspace-rgb (make <colorspace-rgb>))
+(define colorspace-rgb
+  (make <colorspace>
+    'name 'rgb
+    'channels '(r g b)))
 
 
 ;; rgb-color
 ;;
 
-(define-class <rgb-color> (<color>)
-  ((colorspace initform: colorspace-rgb)
-   (r initform: 0)
-   (g initform: 0)
-   (b initform: 0)))
-
 (define (make-rgb-color r g b)
-  (make <rgb-color> 'r r 'g g 'b b))
+  (make-color colorspace-rgb r g b))
 
 
 ;; colorspace-hsv
 ;;
 
-(define-class <colorspace-hsv> (<colorspace>)
-  ((name initform: 'hsv)
-   (channels initform: '(h s v))))
-
-(define colorspace-hsv (make <colorspace-hsv>))
+(define colorspace-hsv
+  (make <colorspace>
+    'name 'hsv
+    'channels '(h s v)))
 
 
 ;; hsv-color
 ;;
 
-(define-class <hsv-color> (<color>)
-  ((colorspace initform: colorspace-hsv)
-   (h initform: 0)
-   (s initform: 0)
-   (v initform: 0)))
-
 (define (make-hsv-color h s v)
-  (make <hsv-color> 'h h 's s 'v v))
+  (make-color colorspace-hsv h s v))
 
 
 ;; conversions
 ;;
 
-;; rgb -> hsv
-(define-method (colorspace-convert (c <rgb-color>) (cs <colorspace-hsv>))
-  (let* ((r (slot-value c 'r))
-         (g (slot-value c 'g))
-         (b (slot-value c 'b))
+(define (rgb->hsv c)
+  (let* ((r (color-value c 'r))
+         (g (color-value c 'g))
+         (b (color-value c 'b))
          (v (max r g b))
          (mn (min r g b)))
     (cond
      ((= v mn)
-      (make <hsv-color> 'h 0.0 's 0.0 'v v))
+      (make-hsv-color 0.0 0.0 v))
      (else
       (let ((s (/ (- v mn) v))
             (h (cond
@@ -139,13 +144,16 @@
                 (else
                  (+ 4.0 (- (/ (- v g) (- v mn))
                            (/ (- v r) (- v mn))))))))
-        (make <hsv-color> 'h (modulo (/ h 6.0) 1) 's s 'v v))))))
+        (make-hsv-color (modulo (/ h 6.0) 1) s v))))))
 
-;; hsv -> rgb
-(define-method (colorspace-convert (c <hsv-color>) (cs <colorspace-rgb>))
-  (let ((h (exact->inexact (slot-value c 'h)))
-        (s (exact->inexact (slot-value c 's)))
-        (v (exact->inexact (slot-value c 'v))))
+(set! colorspace-conversion-functions
+      (cons `(,(list colorspace-rgb colorspace-hsv) . ,rgb->hsv)
+            colorspace-conversion-functions))
+
+(define (hsv->rgb c)
+  (let ((h (exact->inexact (color-value c 'h)))
+        (s (exact->inexact (color-value c 's)))
+        (v (exact->inexact (color-value c 'v))))
     (cond
      ((<= s 0.0) (make-rgb-color v v v))
      (else
@@ -162,5 +170,9 @@
          ((= i 3) (make-rgb-color p q v))
          ((= i 4) (make-rgb-color t p v))
          ((= i 5) (make-rgb-color v p q))))))))
+
+(set! colorspace-conversion-functions
+      (cons `(,(list colorspace-hsv colorspace-rgb) . ,hsv->rgb)
+            colorspace-conversion-functions))
 
 )
