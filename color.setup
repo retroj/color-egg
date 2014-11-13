@@ -1,6 +1,6 @@
 ;; -*- scheme -*-
 
-(compile -s -O3 -d0 -X r7rs -R r7rs color.scm -J)
+(compile -s -O3 -d0 -X r7rs -R r7rs color.sld -J)
 (compile -s -O3 -d0 color.import.scm)
 
 (install-extension
