@@ -24,19 +24,21 @@
 ;; OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ;; ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(module color
-    (make-colorspace colorspace? colorspace-name colorspace-channels
-     make-color color? color-colorspace color-values
-     color-value
-     colorspace-convert
-     colorspace-rgb make-rgb-color
-     colorspace-hsv make-hsv-color)
+(library (color)
+  (export make-colorspace colorspace? colorspace-name colorspace-channels
+          make-color color? color-colorspace color-values
+          color-value
+          colorspace-convert
+          colorspace-rgb make-rgb-color
+          colorspace-hsv make-hsv-color)
 
-(import chicken scheme)
+  (import (scheme base)
+          (chicken)
+          (srfi 1)
+          (extras)
+          (list-utils))
 
-(use (srfi 1)
-     extras
-     list-utils)
+  (begin
 
 ;; colorspace
 ;;
@@ -162,4 +164,4 @@
       (cons `(,(list colorspace-hsv colorspace-rgb) . ,hsv->rgb)
             colorspace-conversion-functions))
 
-)
+))
