@@ -24,7 +24,7 @@
 ;; OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ;; ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(library (color)
+(define-library (color)
   (export make-colorspace colorspace? colorspace-name colorspace-channels
           make-color color? color-colorspace color-values
           color-value
@@ -33,9 +33,7 @@
           colorspace-hsv make-hsv-color)
 
   (import (scheme base)
-          (chicken)
           (srfi 1)
-          (extras)
           (list-utils))
 
   (include "color-impl"))

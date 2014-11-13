@@ -27,18 +27,21 @@
 ;; colorspace
 ;;
 
-(define-record colorspace
-  name channels)
+(define-record-type colorspace
+  (make-colorspace name channels)
+  colorspace?
+  (name colorspace-name)
+  (channels colorspace-channels))
 
 
 ;; color
 ;;
 
-(define-record color
-  colorspace values)
-
-(define %make-color make-color)
-(define %color-values color-values)
+(define-record-type color
+  (%make-color colorspace values)
+  color?
+  (colorspace color-colorspace)
+  (values %color-values))
 
 (define (make-color colorspace . values)
   (%make-color colorspace (list->vector values)))
@@ -124,9 +127,9 @@
             colorspace-conversion-functions))
 
 (define (hsv->rgb c)
-  (let ((h (exact->inexact (color-value c 'h)))
-        (s (exact->inexact (color-value c 's)))
-        (v (exact->inexact (color-value c 'v))))
+  (let ((h (inexact (color-value c 'h)))
+        (s (inexact (color-value c 's)))
+        (v (inexact (color-value c 'v))))
     (cond
      ((<= s 0.0) (make-rgb-color v v v))
      (else
