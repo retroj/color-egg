@@ -33,7 +33,9 @@
           colorspace-hsv make-hsv-color)
 
   (import (scheme base)
+          (scheme case-lambda)
           (srfi 1)
+          (srfi 4)
           (list-utils))
 
   (include "color-impl"))

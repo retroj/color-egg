@@ -27,34 +27,72 @@
 ;; colorspace
 ;;
 
+(define-record-type encoding
+  (make-encoding constructor getter setter)
+  encoding?
+  (constructor encoding-constructor)
+  (getter encoding-getter)
+  (setter encoding-setter))
+
+(define vector-encoding
+  (make-encoding make-vector vector-ref vector-set!))
+
 (define-record-type colorspace
-  (make-colorspace name channels)
+  (%make-colorspace name channels encoding)
   colorspace?
   (name colorspace-name)
-  (channels colorspace-channels))
+  (channels colorspace-channels)
+  (encoding colorspace-encoding))
+
+(define make-colorspace
+  (case-lambda
+   ((name channels encoding)
+    (%make-colorspace name channels encoding))
+   ((name channels)
+    (make-colorspace name channels vector-encoding))))
 
 
 ;; color
 ;;
 
 (define-record-type color
-  (%make-color colorspace values)
+  (%make-color colorspace values values-offset)
   color?
   (colorspace color-colorspace)
-  (values %color-values))
+  (values %color-values)
+  (values-offset color-values-offset color-values-offset-set!))
 
 (define (make-color colorspace . values)
-  (%make-color colorspace (list->vector values)))
+  (let* ((nchannels (length (colorspace-channels colorspace)))
+         (encoding (colorspace-encoding colorspace))
+         (constructor (encoding-constructor encoding))
+         (setter (encoding-setter encoding))
+         (c (%make-color colorspace (constructor nchannels) 0))
+         (%values (%color-values c)))
+    (fold (lambda (val i) (setter %values i val) (+ 1 i)) 0 values)
+    c))
 
 (define (color-values c)
-  (vector->list (%color-values c)))
+  (let* ((cs (color-colorspace c))
+         (encoding (colorspace-encoding cs))
+         (getter (encoding-getter encoding))
+         (values (%color-values c)))
+    (list-tabulate
+     (length (colorspace-channels cs))
+     (lambda (i) (getter values i)))))
 
 (define (color-value c channel)
   (let* ((cs (color-colorspace c))
-         (channels (colorspace-channels cs)))
-    (vector-ref (%color-values c)
-                (list-index (lambda (x) (eq? x channel))
-                            channels))))
+         (channels (colorspace-channels cs))
+         (encoding (colorspace-encoding cs))
+         (getter (encoding-getter encoding)))
+    (getter (%color-values c)
+            (+ (color-values-offset c)
+               (list-index (lambda (x) (eq? x channel))
+                           channels)))))
+
+;;XXX: need a procedure to increment values-offset by the number of
+;;     channels in the colorspace
 
 (define colorspace-conversion-functions (list))
 
