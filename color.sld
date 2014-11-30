@@ -26,6 +26,7 @@
 
 (define-library (color)
   (export make-colorspace colorspace? colorspace-name colorspace-channels
+          colorspace-nchannels
           make-color color? color-colorspace color-values
           color-value
           colorspace-convert

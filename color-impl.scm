@@ -51,6 +51,9 @@
    ((name channels)
     (make-colorspace name channels vector-encoding))))
 
+(define (colorspace-nchannels cs)
+  (length (colorspace-channels cs)))
+
 
 ;; color
 ;;
@@ -63,7 +66,7 @@
   (values-offset color-values-offset color-values-offset-set!))
 
 (define (make-color colorspace . values)
-  (let* ((nchannels (length (colorspace-channels colorspace)))
+  (let* ((nchannels (colorspace-nchannels colorspace))
          (encoding (colorspace-encoding colorspace))
          (constructor (encoding-constructor encoding))
          (setter (encoding-setter encoding))
