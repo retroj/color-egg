@@ -25,7 +25,9 @@
 ;; ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (define-library (color)
-  (export make-colorspace colorspace? colorspace-name colorspace-channels
+  (export make-encoding encoding-constructor
+          make-colorspace colorspace?
+          colorspace-name colorspace-channels colorspace-encoding
           colorspace-nchannels
           make-color color? color-colorspace color-values
           color-value
