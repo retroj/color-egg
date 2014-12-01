@@ -42,17 +42,17 @@
   colorspace?
   (name colorspace-name)
   (channels colorspace-channels)
+  (nchannels colorspace-nchannels %colorspace-nchannels-set!)
   (encoding colorspace-encoding))
 
 (define make-colorspace
   (case-lambda
    ((name channels encoding)
-    (%make-colorspace name channels encoding))
+    (let ((cs (%make-colorspace name channels encoding)))
+      (%colorspace-nchannels-set! cs (length (colorspace-channels cs)))
+      cs))
    ((name channels)
     (make-colorspace name channels vector-encoding))))
-
-(define (colorspace-nchannels cs)
-  (length (colorspace-channels cs)))
 
 
 ;; color
