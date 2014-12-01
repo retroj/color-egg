@@ -24,7 +24,7 @@
 ;; OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ;; ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-;; colorspace
+;; encoding
 ;;
 
 (define-record-type encoding
@@ -36,6 +36,10 @@
 
 (define vector-encoding
   (make-encoding make-vector vector-ref vector-set!))
+
+
+;; colorspace
+;;
 
 (define-record-type colorspace
   (%make-colorspace name channels encoding)
