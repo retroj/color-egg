@@ -39,6 +39,7 @@
           (scheme case-lambda)
           (srfi 1)
           (srfi 4)
-          (list-utils))
+          (list-utils)
+          (matchable))
 
   (include "color-impl"))

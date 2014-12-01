@@ -28,14 +28,15 @@
 ;;
 
 (define-record-type encoding
-  (make-encoding constructor getter setter)
+  (make-encoding constructor getter setter scale)
   encoding?
   (constructor encoding-constructor)
   (getter encoding-getter)
-  (setter encoding-setter))
+  (setter encoding-setter)
+  (scale encoding-scale))
 
 (define vector-encoding
-  (make-encoding make-vector vector-ref vector-set!))
+  (make-encoding make-vector vector-ref vector-set! #f))
 
 
 ;; colorspace
@@ -74,51 +75,95 @@
          (encoding (colorspace-encoding colorspace))
          (constructor (encoding-constructor encoding))
          (setter (encoding-setter encoding))
+         (scale (encoding-scale encoding))
          (c (%make-color colorspace (constructor nchannels) 0))
          (%values (%color-values c)))
-    (fold (lambda (val i) (setter %values i val) (+ 1 i)) 0 values)
+    (fold (lambda (val i)
+            (if scale
+                (setter %values i (exact (round (* scale val))))
+                (setter %values i val))
+            (+ 1 i))
+          0 values)
     c))
 
-(define (color-values c)
-  (let* ((cs (color-colorspace c))
-         (encoding (colorspace-encoding cs))
-         (getter (encoding-getter encoding))
-         (values (%color-values c)))
-    (list-tabulate
-     (length (colorspace-channels cs))
-     (lambda (i) (getter values i)))))
+(define color-values
+  (case-lambda
+   ((c normalized?)
+    (let* ((cs (color-colorspace c))
+           (encoding (colorspace-encoding cs))
+           (getter (encoding-getter encoding))
+           (scale (encoding-scale encoding))
+           (values (%color-values c)))
+      (list-tabulate
+       (colorspace-nchannels cs)
+       (lambda (i)
+         (let ((v (getter values i)))
+           (if (and normalized? scale)
+               (/ (inexact v) scale)
+               v))))))
+   ((c)
+    (color-values c #f))))
 
-(define (color-value c channel)
-  (let* ((cs (color-colorspace c))
-         (channels (colorspace-channels cs))
-         (encoding (colorspace-encoding cs))
-         (getter (encoding-getter encoding)))
-    (getter (%color-values c)
-            (+ (color-values-offset c)
-               (list-index (lambda (x) (eq? x channel))
-                           channels)))))
+(define color-value
+  (case-lambda
+   ((c channel normalized?)
+    (let* ((cs (color-colorspace c))
+           (channels (colorspace-channels cs))
+           (encoding (colorspace-encoding cs))
+           (getter (encoding-getter encoding))
+           (scale (encoding-scale encoding))
+           (v (getter (%color-values c)
+                      (+ (color-values-offset c)
+                         (list-index (lambda (x) (eq? x channel))
+                                     channels)))))
+      (if (and normalized? scale)
+          (/ (inexact v) scale)
+          v)))
+   ((c channel)
+    (color-value c channel #f))))
 
 ;;XXX: need a procedure to increment values-offset by the number of
 ;;     channels in the colorspace
 
 (define colorspace-conversion-functions (list))
 
+(define (colorspace-conversion-add! fromchannels tochannels proc)
+  (set! colorspace-conversion-functions
+        (cons (cons (list fromchannels tochannels) proc)
+              colorspace-conversion-functions)))
+
 (define (colorspace-convert color dst-colorspace)
-  (let ((src-colorspace (color-colorspace color)))
-    (cond
-     ((eq? dst-colorspace (color-colorspace color))
-      color)
-     #;((colorspace-profile dst-colorspace)
-      =>
-      (lambda (profile)
-        ))
-     ((assoc-def (list src-colorspace dst-colorspace) colorspace-conversion-functions)
-      =>
-      (lambda (conversion)
-        (let ((fn (cdr conversion)))
-          (fn color))))
-     (else
-      (error "Don't know how to convert colorspace X to colorspace Y")))))
+  (let* ((src-colorspace (color-colorspace color))
+         (src-channels (colorspace-channels src-colorspace))
+         (dst-channels (colorspace-channels dst-colorspace))
+         (src-encoding (colorspace-encoding src-colorspace))
+         (dst-encoding (colorspace-encoding dst-colorspace))
+         (knowns src-channels)
+         (knowns+values (zip knowns (color-values color #t))) ;; normalized
+         (unknowns (lset-difference eq? dst-channels knowns)))
+    (let ((rule (and (not (null? unknowns))
+                     (find (match-lambda
+                            (((takes gives) . proc)
+                             (and (lset<= eq? takes knowns)
+                                  (equal? unknowns (lset-intersection eq? unknowns gives)))))
+                           colorspace-conversion-functions))))
+      (cond
+       ((null? unknowns)
+        (apply make-color dst-colorspace
+               (map (lambda (ch) (cadr (assoc ch knowns+values eq?)))
+                    dst-channels)))
+       (rule
+        (match-let ((((takes gives) . conversion-proc) rule))
+          (let ((result-values
+                 (zip gives
+                      (apply conversion-proc
+                             (map (lambda (ch) (inexact (cadr (assoc ch knowns+values eq?))))
+                                  takes)))))
+            (apply make-color dst-colorspace
+                   (map (lambda (ch) (cadr (assoc ch result-values eq?)))
+                        dst-channels)))))
+       (else
+        (error (sprintf "colorspace-convert could not solve ~S -> ~S" src-channels dst-channels)))))))
 
 
 ;; colorspace-rgb
@@ -144,15 +189,12 @@
 ;; conversions
 ;;
 
-(define (rgb->hsv c)
-  (let* ((r (color-value c 'r))
-         (g (color-value c 'g))
-         (b (color-value c 'b))
-         (v (max r g b))
+(define (rgb->hsv r g b)
+  (let* ((v (max r g b))
          (mn (min r g b)))
     (cond
      ((= v mn)
-      (make-hsv-color 0.0 0.0 v))
+      (list 0.0 0.0 v))
      (else
       (let ((s (/ (- v mn) v))
             (h (cond
@@ -165,33 +207,26 @@
                 (else
                  (+ 4.0 (- (/ (- v g) (- v mn))
                            (/ (- v r) (- v mn))))))))
-        (make-hsv-color (modulo (/ h 6.0) 1) s v))))))
+        (list (modulo (/ h 6.0) 1) s v))))))
 
-(set! colorspace-conversion-functions
-      (cons `(,(list colorspace-rgb colorspace-hsv) . ,rgb->hsv)
-            colorspace-conversion-functions))
+(colorspace-conversion-add! '(r g b) '(h s v) rgb->hsv)
 
-(define (hsv->rgb c)
-  (let ((h (inexact (color-value c 'h)))
-        (s (inexact (color-value c 's)))
-        (v (inexact (color-value c 'v))))
-    (cond
-     ((<= s 0.0) (make-rgb-color v v v))
-     (else
-      (let* ((hh (* 6.0 (- h (truncate h))))
-             (i (truncate hh))
-             (f (- hh i))
-             (p (* v (- 1.0 s)))
-             (q (* v (- 1.0 (* s f))))
-             (t (* v (- 1.0 (* s (- 1.0 f))))))
-        (cond
-         ((= i 0) (make-rgb-color v t p))
-         ((= i 1) (make-rgb-color q v p))
-         ((= i 2) (make-rgb-color p v t))
-         ((= i 3) (make-rgb-color p q v))
-         ((= i 4) (make-rgb-color t p v))
-         ((= i 5) (make-rgb-color v p q))))))))
+(define (hsv->rgb h s v)
+  (cond
+   ((<= s 0.0) (list v v v))
+   (else
+    (let* ((hh (* 6.0 (- h (truncate h))))
+           (i (truncate hh))
+           (f (- hh i))
+           (p (* v (- 1.0 s)))
+           (q (* v (- 1.0 (* s f))))
+           (t (* v (- 1.0 (* s (- 1.0 f))))))
+      (cond
+       ((= i 0) (list v t p))
+       ((= i 1) (list q v p))
+       ((= i 2) (list p v t))
+       ((= i 3) (list p q v))
+       ((= i 4) (list t p v))
+       ((= i 5) (list v p q)))))))
 
-(set! colorspace-conversion-functions
-      (cons `(,(list colorspace-hsv colorspace-rgb) . ,hsv->rgb)
-            colorspace-conversion-functions))
+(colorspace-conversion-add! '(h s v) '(r g b) hsv->rgb)
