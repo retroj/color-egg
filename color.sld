@@ -31,12 +31,12 @@
           colorspace-name colorspace-channels colorspace-encoding
           colorspace-nchannels
 
-          color color?
+          :color color?
           make-color
           color-colorspace color-values color-value
           color-values-set!
 
-          color-array color-array?
+          :color-array color-array?
           make-color-array color-array-initialize-instance
 
           colorspace-convert

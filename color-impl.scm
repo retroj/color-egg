@@ -27,7 +27,7 @@
 ;; encoding
 ;;
 
-(define-record-type encoding
+(define-record-type :encoding
   (make-encoding constructor getter setter scale)
   encoding?
   (constructor encoding-constructor)
@@ -42,7 +42,7 @@
 ;; colorspace
 ;;
 
-(define-record-type colorspace
+(define-record-type :colorspace
   (%make-colorspace name channels encoding)
   colorspace?
   (name colorspace-name)
@@ -63,7 +63,7 @@
 ;; color
 ;;
 
-(define-record-type color
+(define-record-type :color
   (%make-color colorspace values)
   color?
   (colorspace color-colorspace)
@@ -142,7 +142,7 @@
 ;; color-array
 ;;
 
-(define-record-type (color-array color)
+(define-record-type (:color-array :color)
   (%make-color-array colorspace)
   color-array?
   (values-offset color-array-values-offset color-array-values-offset-set!))
