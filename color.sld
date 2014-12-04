@@ -26,11 +26,19 @@
 
 (define-library (color)
   (export make-encoding encoding-constructor
+
           make-colorspace colorspace?
           colorspace-name colorspace-channels colorspace-encoding
           colorspace-nchannels
-          make-color color? color-colorspace color-values
-          color-value
+
+          color color?
+          make-color
+          color-colorspace color-values color-value
+          color-values-set!
+
+          color-array color-array?
+          make-color-array color-array-initialize-instance
+
           colorspace-convert
           colorspace-rgb make-rgb-color
           colorspace-hsv make-hsv-color)
@@ -39,6 +47,7 @@
           (scheme case-lambda)
           (srfi 1)
           (srfi 4)
+          (srfi 99)
           (list-utils)
           (matchable))
 

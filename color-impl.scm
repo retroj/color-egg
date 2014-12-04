@@ -64,11 +64,10 @@
 ;;
 
 (define-record-type color
-  (%make-color colorspace values values-offset)
+  (%make-color colorspace values)
   color?
   (colorspace color-colorspace)
-  (values %color-values)
-  (values-offset color-values-offset color-values-offset-set!))
+  (values %color-values %color-values-set!))
 
 (define (make-color colorspace . values)
   (let* ((nchannels (colorspace-nchannels colorspace))
@@ -76,7 +75,7 @@
          (constructor (encoding-constructor encoding))
          (setter (encoding-setter encoding))
          (scale (encoding-scale encoding))
-         (c (%make-color colorspace (constructor nchannels) 0))
+         (c (%make-color colorspace (constructor nchannels)))
          (%values (%color-values c)))
     (fold (lambda (val i)
             (if scale
@@ -113,17 +112,62 @@
            (getter (encoding-getter encoding))
            (scale (encoding-scale encoding))
            (v (getter (%color-values c)
-                      (+ (color-values-offset c)
-                         (list-index (lambda (x) (eq? x channel))
-                                     channels)))))
+                      (list-index (lambda (x) (eq? x channel))
+                                  channels))))
       (if (and normalized? scale)
           (/ (inexact v) scale)
           v)))
    ((c channel)
     (color-value c channel #f))))
 
+(define color-values-set!
+  (case-lambda
+   ((c other)
+    (let* ((cs (color-colorspace c))
+           (other (if (eq? (color-colorspace other) cs)
+                      other
+                      (colorspace-convert other cs)))
+           (encoding (colorspace-encoding cs)))
+      (let ((getter (encoding-getter encoding))
+            (setter (encoding-setter encoding))
+            (cvals (%color-values c))
+            (ovals (%color-values other)))
+        (do ((i 0 (+ 1 i))
+             (j 0 (+ 1 j))
+             (n (colorspace-nchannels cs)))
+            ((>= i n))
+          (setter cvals j (getter ovals i))))))))
+
+
+;; color-array
+;;
+
+(define-record-type (color-array color)
+  (%make-color-array colorspace)
+  color-array?
+  (values-offset color-array-values-offset color-array-values-offset-set!))
+
+(define (color-array-initialize-instance c nelements)
+  (let* ((colorspace (color-colorspace c))
+         (nchannels (colorspace-nchannels colorspace))
+         (encoding (colorspace-encoding colorspace))
+         (constructor (encoding-constructor encoding))
+         (values (constructor (* nchannels nelements))))
+    (%color-values-set! c values)
+    (color-array-values-offset-set! c 0)
+    c))
+
+(define (make-color-array colorspace nelements)
+  (color-array-initialize-instance
+   (%make-color-array colorspace)
+   nelements))
+
 ;;XXX: need a procedure to increment values-offset by the number of
 ;;     channels in the colorspace
+
+
+;; colorspace-convert
+;;
 
 (define colorspace-conversion-functions (list))
 
