@@ -170,10 +170,11 @@
          (encoding (colorspace-encoding cs))
          (length ((encoding-length encoding) (%color-values c)))
          (nchannels (colorspace-nchannels cs)))
-    (do ((i 0 (+ 1 i)))
+    (do ((i 0 (+ nchannels i))
+         (j 0 (+ 1 j)))
         ((>= i length))
-      (color-array-values-offset-set! c (* i nchannels))
-      (proc c i))))
+      (color-array-values-offset-set! c i)
+      (proc c j))))
 
 ;;XXX: need a procedure to increment values-offset by the number of
 ;;     channels in the colorspace
