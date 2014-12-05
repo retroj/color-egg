@@ -28,15 +28,16 @@
 ;;
 
 (define-record-type :encoding
-  (make-encoding constructor getter setter scale)
+  (make-encoding constructor getter setter length scale)
   encoding?
   (constructor encoding-constructor)
   (getter encoding-getter)
   (setter encoding-setter)
+  (length encoding-length)
   (scale encoding-scale))
 
 (define vector-encoding
-  (make-encoding make-vector vector-ref vector-set! #f))
+  (make-encoding make-vector vector-ref vector-set! vector-length #f))
 
 
 ;; colorspace
