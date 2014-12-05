@@ -38,7 +38,7 @@
 
           :color-array color-array?
           make-color-array color-array-initialize-instance
-          color-array-data
+          color-array-data color-array-color-set!
           color-array-for-each
 
           colorspace-convert

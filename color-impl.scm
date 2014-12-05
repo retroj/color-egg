@@ -165,6 +165,25 @@
 
 (define color-array-data %color-values)
 
+(define color-array-color-set!
+  (case-lambda
+   ((c other)
+    (let* ((cs (color-colorspace c))
+           (encoding (colorspace-encoding cs))
+           (other (if (eq? (color-colorspace other) cs)
+                      other
+                      (colorspace-convert other cs))))
+      (let ((getter (encoding-getter encoding))
+            (setter (encoding-setter encoding))
+            (cvals (%color-values c))
+            (offset (color-array-values-offset c))
+            (ovals (%color-values other)))
+        (do ((i 0 (+ 1 i))
+             (j offset (+ 1 j))
+             (n (colorspace-nchannels cs)))
+            ((>= i n))
+          (setter cvals j (getter ovals i))))))))
+
 (define (color-array-for-each c proc)
   (let* ((cs (color-colorspace c))
          (encoding (colorspace-encoding cs))
