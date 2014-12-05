@@ -153,7 +153,7 @@
          (nchannels (colorspace-nchannels colorspace))
          (encoding (colorspace-encoding colorspace))
          (constructor (encoding-constructor encoding))
-         (values (constructor (* nchannels nelements))))
+         (values (constructor (* nchannels nelements) 0)))
     (%color-values-set! c values)
     (color-array-values-offset-set! c 0)
     c))
