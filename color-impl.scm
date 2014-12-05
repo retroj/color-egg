@@ -165,6 +165,16 @@
 
 (define color-array-data %color-values)
 
+(define (color-array-for-each c proc)
+  (let* ((cs (color-colorspace c))
+         (encoding (colorspace-encoding cs))
+         (length ((encoding-length encoding) (%color-values c)))
+         (nchannels (colorspace-nchannels cs)))
+    (do ((i 0 (+ 1 i)))
+        ((>= i length))
+      (color-array-values-offset-set! c (* i nchannels))
+      (proc c i))))
+
 ;;XXX: need a procedure to increment values-offset by the number of
 ;;     channels in the colorspace
 
