@@ -38,6 +38,7 @@
 
           :color-array color-array?
           make-color-array color-array-initialize-instance
+          color-array-data
 
           colorspace-convert
           colorspace-rgb make-rgb-color

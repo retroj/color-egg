@@ -163,6 +163,8 @@
    (%make-color-array colorspace)
    nelements))
 
+(define color-array-data %color-values)
+
 ;;XXX: need a procedure to increment values-offset by the number of
 ;;     channels in the colorspace
 
