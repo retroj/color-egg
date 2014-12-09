@@ -17,7 +17,7 @@
         (make-rgb-color 1 0 0)
         (make-colorspace
          'rgb256 '(r g b)
-         (make-encoding make-vector vector-ref vector-set! 255)))))
+         (make-encoding make-vector vector-ref vector-set! vector-length 255)))))
 
 (test '(255 0 0)
       (color-values
@@ -25,7 +25,7 @@
         (make-rgb-color 1.0 0.0 0.0)
         (make-colorspace
          'rgb256 '(r g b)
-         (make-encoding make-vector vector-ref vector-set! 255)))))
+         (make-encoding make-vector vector-ref vector-set! vector-length 255)))))
 
 (test '(128 0 0)
       (color-values
@@ -33,6 +33,6 @@
         (make-rgb-color 0.5 0.0 0.0)
         (make-colorspace
          'rgb256 '(r g b)
-         (make-encoding make-vector vector-ref vector-set! 255)))))
+         (make-encoding make-vector vector-ref vector-set! vector-length 255)))))
 
 (test-exit)
