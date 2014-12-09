@@ -1,0 +1,30 @@
+
+* TODO grayscale-colorspace
+  :LOGBOOK:  
+  - State -> "TODO"  [2014-12-09 Tue]
+  :END:      
+
+grayscale-colorspace has only one channel, v.
+
+TEST: if you have a grayscale color, conversion to hsv can infer that h
+      and s are zero without the need for a special conversion procedure.
+
+* TODO efficient color-array design
+  :LOGBOOK:  
+  - State -> "TODO"  [2014-12-09 Tue]
+  :END:      
+
+The current design of color-array is inefficient for things like getting,
+setting, and copying color values.  This is because every time we do any
+of these things, we need to look up the colorspace and encoding.
+
+What advantages could be gained by always storing color values in
+byte-blobs, instead of allowing any encoding whatsoever?
+
+ - Copying values from one color-array to another color or color-array
+   could be done with memcpy if they had the same encoding.
+
+Could encoding lookups be reduced by having procedures which returned
+encoding-specific closures?  A caller that needed to do a large amount of
+color work could then get a closure that captured the encoding accessors
+or setters that they needed, and not have to do a lookup for each pixel.
