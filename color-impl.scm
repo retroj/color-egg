@@ -76,14 +76,15 @@
          (constructor (encoding-constructor encoding))
          (setter (encoding-setter encoding))
          (scale (encoding-scale encoding))
-         (c (%make-color colorspace (constructor nchannels)))
+         (c (%make-color colorspace (constructor nchannels 0)))
          (%values (%color-values c)))
-    (fold (lambda (val i)
-            (if scale
-                (setter %values i (exact (round (* scale val))))
-                (setter %values i val))
-            (+ 1 i))
-          0 values)
+    (unless (null? values)
+      (fold (lambda (val i)
+              (if scale
+                  (setter %values i (exact (round (* scale val))))
+                  (setter %values i val))
+              (+ 1 i))
+            0 values))
     c))
 
 (define color-values
