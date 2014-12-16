@@ -1,4 +1,28 @@
 
+* TODO remove encodings
+  :LOGBOOK:
+  - State -> "TODO"  [2014-12-15 Mon]
+  :END:
+
+It has become clear that encodings as currently implemented are not a good
+way to go with the color egg.  They added a great deal of complexity for
+basically no benefit.  The purpose of encodings was to allow color-arrays
+to directly address into pixel buffers, however, I am hard pressed to come
+up with very many actual cases where non-normalized color values are
+desirable when manipulating colors.  The amount of type checking needed at
+every step, alternative versions of procedures for different encodings,
+and constant conversion to and from normalized form all indicate a library
+spiraling out of control in its complexity and indicate that encodings
+were a bad idea.
+
+Instead we should focus on an encoding system where encodings are used to
+get data into and out of the color egg.
+
+Internally, I think it makes most sense to store color data in a float
+type srfi-4 vector, rather than a scheme vector like we used to use.  By
+using a srfi-4 vector, we still provide the possibility of optimized
+manipulation by foreign code when needed.
+
 * TODO grayscale-colorspace
   :LOGBOOK:  
   - State -> "TODO"  [2014-12-09 Tue]
