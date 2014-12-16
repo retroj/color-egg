@@ -1,7 +1,9 @@
 
-* TODO remove encodings
+* STARTED remove encodings
   :LOGBOOK:
   - State -> "TODO"  [2014-12-15 Mon]
+  - State -> "STARTED"  [2014-12-15 Mon] \\
+    encodings removed; replacement forthcoming.
   :END:
 
 It has become clear that encodings as currently implemented are not a good

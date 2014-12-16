@@ -24,41 +24,20 @@
 ;; OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ;; ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-;; encoding
-;;
-
-(define-record-type :encoding
-  (make-encoding constructor getter setter length scale)
-  encoding?
-  (constructor encoding-constructor)
-  (getter encoding-getter)
-  (setter encoding-setter)
-  (length encoding-length)
-  (scale encoding-scale))
-
-(define vector-encoding
-  (make-encoding make-vector vector-ref vector-set! vector-length #f))
-
-
 ;; colorspace
 ;;
 
 (define-record-type :colorspace
-  (%make-colorspace name channels encoding)
+  (%make-colorspace name channels)
   colorspace?
   (name colorspace-name)
   (channels colorspace-channels)
-  (nchannels colorspace-nchannels %colorspace-nchannels-set!)
-  (encoding colorspace-encoding))
+  (nchannels colorspace-nchannels %colorspace-nchannels-set!))
 
-(define make-colorspace
-  (case-lambda
-   ((name channels encoding)
-    (let ((cs (%make-colorspace name channels encoding)))
-      (%colorspace-nchannels-set! cs (length (colorspace-channels cs)))
-      cs))
-   ((name channels)
-    (make-colorspace name channels vector-encoding))))
+(define (make-colorspace name channels)
+  (let ((cs (%make-colorspace name channels)))
+    (%colorspace-nchannels-set! cs (length (colorspace-channels cs)))
+    cs))
 
 
 ;; color
@@ -72,73 +51,41 @@
 
 (define (make-color colorspace . values)
   (let* ((nchannels (colorspace-nchannels colorspace))
-         (encoding (colorspace-encoding colorspace))
-         (constructor (encoding-constructor encoding))
-         (setter (encoding-setter encoding))
-         (scale (encoding-scale encoding))
-         (c (%make-color colorspace (constructor nchannels 0)))
+         (c (%make-color colorspace (make-f64vector nchannels 0)))
          (%values (%color-values c)))
     (unless (null? values)
       (fold (lambda (val i)
-              (if scale
-                  (setter %values i (exact (round (* scale val))))
-                  (setter %values i val))
+              (f64vector-set! %values i val)
               (+ 1 i))
             0 values))
     c))
 
-(define color-values
-  (case-lambda
-   ((c normalized?)
-    (let* ((cs (color-colorspace c))
-           (encoding (colorspace-encoding cs))
-           (getter (encoding-getter encoding))
-           (scale (encoding-scale encoding))
-           (values (%color-values c)))
-      (list-tabulate
-       (colorspace-nchannels cs)
-       (lambda (i)
-         (let ((v (getter values i)))
-           (if (and normalized? scale)
-               (/ (inexact v) scale)
-               v))))))
-   ((c)
-    (color-values c #f))))
+(define (color-values c)
+  (let ((cs (color-colorspace c))
+        (values (%color-values c)))
+    (list-tabulate
+     (colorspace-nchannels cs)
+     (lambda (i) (f64vector-ref values i)))))
 
-(define color-value
-  (case-lambda
-   ((c channel normalized?)
-    (let* ((cs (color-colorspace c))
-           (channels (colorspace-channels cs))
-           (encoding (colorspace-encoding cs))
-           (getter (encoding-getter encoding))
-           (scale (encoding-scale encoding))
-           (v (getter (%color-values c)
-                      (list-index (lambda (x) (eq? x channel))
-                                  channels))))
-      (if (and normalized? scale)
-          (/ (inexact v) scale)
-          v)))
-   ((c channel)
-    (color-value c channel #f))))
+(define (color-value c channel)
+  (let ((cs (color-colorspace c)))
+    (f64vector-ref
+     (%color-values c)
+     (list-index (lambda (x) (eq? x channel))
+                 (colorspace-channels cs)))))
 
-(define color-values-set!
-  (case-lambda
-   ((c other)
-    (let* ((cs (color-colorspace c))
-           (other (if (eq? (color-colorspace other) cs)
-                      other
-                      (colorspace-convert other cs)))
-           (encoding (colorspace-encoding cs)))
-      (let ((getter (encoding-getter encoding))
-            (setter (encoding-setter encoding))
-            (cvals (%color-values c))
-            (ovals (%color-values other)))
-        (do ((i 0 (+ 1 i))
-             (j 0 (+ 1 j))
-             (n (colorspace-nchannels cs)))
-            ((>= i n))
-          (setter cvals j (getter ovals i))))))))
+(define (color-values-set! c other)
+  (let* ((cs (color-colorspace c))
+         (other (if (eq? (color-colorspace other) cs)
+                    other
+                    (colorspace-convert other cs))))
+    (let ((cvals (%color-values c))
+          (ovals (%color-values other)))
+      (do ((i 0 (+ 1 i))
+           (j 0 (+ 1 j))
+           (n (colorspace-nchannels cs)))
+          ((>= i n))
+        (f64vector-set! cvals j (f64vector-ref ovals i))))))
 
 
 ;; color-array
@@ -150,11 +97,9 @@
   (values-offset color-array-values-offset color-array-values-offset-set!))
 
 (define (color-array-initialize-instance c nelements)
-  (let* ((colorspace (color-colorspace c))
-         (nchannels (colorspace-nchannels colorspace))
-         (encoding (colorspace-encoding colorspace))
-         (constructor (encoding-constructor encoding))
-         (values (constructor (* nchannels nelements) 0)))
+  (let* ((cs (color-colorspace c))
+         (nchannels (colorspace-nchannels cs))
+         (values (make-f64vector (* nchannels nelements) 0)))
     (%color-values-set! c values)
     (color-array-values-offset-set! c 0)
     c))
@@ -170,12 +115,9 @@
   (case-lambda
    ((c other)
     (let* ((cs (color-colorspace c))
-           (encoding (colorspace-encoding cs))
            (other (if (eq? (color-colorspace other) cs)
                       other
                       (colorspace-convert other cs)))
-           (getter (encoding-getter encoding))
-           (setter (encoding-setter encoding))
            (cvals (%color-values c))
            (offset (color-array-values-offset c))
            (ovals (%color-values other)))
@@ -183,7 +125,7 @@
            (j offset (+ 1 j))
            (n (colorspace-nchannels cs)))
           ((>= i n))
-        (setter cvals j (getter ovals i)))))
+        (f64vector-set! cvals j (f64vector-ref ovals i)))))
    ((c i other)
     (let* ((cs (color-colorspace c))
            (nchannels (colorspace-nchannels cs))
@@ -195,9 +137,6 @@
 (define (color-array-color-get c i)
   (let* ((cs (color-colorspace c))
          (nchannels (colorspace-nchannels cs))
-         (encoding (colorspace-encoding cs))
-         (getter (encoding-getter encoding))
-         (setter (encoding-setter encoding))
          (c2 (make-color cs))
          (cvals (%color-values c))
          (c2vals (%color-values c2))
@@ -207,14 +146,13 @@
          (r 0 (+ 1 r))
          (n nchannels))
         ((>= r n))
-      (setter c2vals r (getter cvals q)))
+      (f64vector-set! c2vals r (f64vector-ref cvals q)))
     (color-array-values-offset-set! c j)
     c2))
 
 (define (color-array-for-each c proc)
   (let* ((cs (color-colorspace c))
-         (encoding (colorspace-encoding cs))
-         (length ((encoding-length encoding) (%color-values c)))
+         (length (f64vector-length (%color-values c)))
          (nchannels (colorspace-nchannels cs)))
     (do ((i 0 (+ nchannels i))
          (j 0 (+ 1 j)))
@@ -240,10 +178,8 @@
   (let* ((src-colorspace (color-colorspace color))
          (src-channels (colorspace-channels src-colorspace))
          (dst-channels (colorspace-channels dst-colorspace))
-         (src-encoding (colorspace-encoding src-colorspace))
-         (dst-encoding (colorspace-encoding dst-colorspace))
          (knowns src-channels)
-         (knowns+values (zip knowns (color-values color #t))) ;; normalized
+         (knowns+values (zip knowns (color-values color)))
          (unknowns (lset-difference eq? dst-channels knowns)))
     (let ((rule (and (not (null? unknowns))
                      (find (match-lambda
