@@ -26,6 +26,8 @@
 
 (define-library (color)
   (export make-encoding encoding-constructor
+          encoding-getter encoding-setter
+          encoding-length
 
           make-colorspace colorspace?
           colorspace-name colorspace-channels colorspace-encoding
