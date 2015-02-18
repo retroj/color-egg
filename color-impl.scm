@@ -111,6 +111,9 @@
 
 (define color-array-data %color-values)
 
+(define (color-array-length c)
+  (f64vector-length (color-array-data c)))
+
 (define color-array-color-set!
   (case-lambda
    ((c other)
