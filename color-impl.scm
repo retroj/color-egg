@@ -112,7 +112,9 @@
 (define color-array-data %color-values)
 
 (define (color-array-length c)
-  (f64vector-length (color-array-data c)))
+  (let* ((cs (color-colorspace c))
+         (nchannels (colorspace-nchannels cs)))
+    (/ (f64vector-length (color-array-data c)) nchannels)))
 
 (define color-array-color-set!
   (case-lambda
