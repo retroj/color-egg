@@ -55,7 +55,7 @@
          (%values (%color-values c)))
     (unless (null? values)
       (fold (lambda (val i)
-              (f64vector-set! %values i val)
+              (f64vector-set! %values i (inexact val))
               (+ 1 i))
             0 values))
     c))
