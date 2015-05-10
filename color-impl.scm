@@ -1,4 +1,4 @@
-;; Copyright 2014 John J Foerch. All rights reserved.
+;; Copyright 2014--2015 John J Foerch. All rights reserved.
 ;;
 ;; Redistribution and use in source and binary forms, with or without
 ;; modification, are permitted provided that the following conditions are
@@ -221,11 +221,21 @@
   (make-color colorspace-rgb r g b))
 
 
+;; colorspace-hsl
+;;
+
+(define colorspace-hsl
+  (make-colorspace 'hsl '(h s-hsl l)))
+
+(define (make-hsl-color h s l)
+  (make-color colorspace-hsl h s l))
+
+
 ;; colorspace-hsv
 ;;
 
 (define colorspace-hsv
-  (make-colorspace 'hsv '(h s v)))
+  (make-colorspace 'hsv '(h s-hsv v)))
 
 (define (make-hsv-color h s v)
   (make-color colorspace-hsv h s v))
@@ -233,6 +243,30 @@
 
 ;; conversions
 ;;
+
+(define (rgb->hsl r g b)
+  (let* ((M (max r g b))
+         (m (min r g b))
+         (l (* 0.5 (+ M m))))
+    (cond
+     ((= M m)
+      (list 0.0 0.0 l))
+     (else
+      (let* ((c (- M m))
+             (s (/ c (- 1.0 (abs (- (* 2.0 l) 1.0)))))
+             (h (cond
+                 ((= r M)
+                  (- (/ (- M b) c)
+                     (/ (- M g) c)))
+                 ((= g M)
+                  (+ 2.0 (- (/ (- M r) c)
+                            (/ (- M b) c))))
+                 (else
+                  (+ 4.0 (- (/ (- M g) c)
+                            (/ (- M r) c)))))))
+        (list (/ h 6.0) s l))))))
+
+(colorspace-conversion-add! '(r g b) '(h s-hsl l) rgb->hsl)
 
 (define (rgb->hsv r g b)
   (let* ((v (max r g b))
@@ -252,9 +286,9 @@
                 (else
                  (+ 4.0 (- (/ (- v g) (- v mn))
                            (/ (- v r) (- v mn))))))))
-        (list (modulo (/ h 6.0) 1) s v))))))
+        (list (/ h 6.0) s v))))))
 
-(colorspace-conversion-add! '(r g b) '(h s v) rgb->hsv)
+(colorspace-conversion-add! '(r g b) '(h s-hsv v) rgb->hsv)
 
 (define (hsv->rgb h s v)
   (cond
@@ -274,4 +308,4 @@
        ((= i 4) (list t p v))
        ((= i 5) (list v p q)))))))
 
-(colorspace-conversion-add! '(h s v) '(r g b) hsv->rgb)
+(colorspace-conversion-add! '(h s-hsv v) '(r g b) hsv->rgb)

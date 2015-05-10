@@ -42,6 +42,7 @@
 
           colorspace-convert
           colorspace-rgb make-rgb-color
+          colorspace-hsl make-hsl-color
           colorspace-hsv make-hsv-color)
 
   (import (scheme base)
