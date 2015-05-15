@@ -36,7 +36,7 @@
 
           :color-array color-array?
           make-color-array color-array-initialize-instance
-          color-array-data color-array-length
+          color-array-data color-array-data-set! color-array-length
           color-array-color-set! color-array-color-get
           color-array-for-each
 

@@ -111,6 +111,8 @@
 
 (define color-array-data %color-values)
 
+(define color-array-data-set! %color-values-set!)
+
 (define (color-array-length c)
   (let* ((cs (color-colorspace c))
          (nchannels (colorspace-nchannels cs)))
