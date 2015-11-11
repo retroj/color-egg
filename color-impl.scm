@@ -118,7 +118,7 @@
          (nchannels (colorspace-nchannels cs)))
     (/ (f64vector-length (color-array-data c)) nchannels)))
 
-(define color-array-color-set!
+(define color-array-set!
   (case-lambda
    ((c other)
     (let* ((cs (color-colorspace c))
@@ -138,10 +138,10 @@
            (nchannels (colorspace-nchannels cs))
            (j (color-array-values-offset c)))
       (color-array-values-offset-set! c (* nchannels i))
-      (color-array-color-set! c other)
+      (color-array-set! c other)
       (color-array-values-offset-set! c j)))))
 
-(define (color-array-color-get c i)
+(define (color-array-ref c i)
   (let* ((cs (color-colorspace c))
          (nchannels (colorspace-nchannels cs))
          (c2 (make-color cs))
